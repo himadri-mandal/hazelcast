@@ -200,7 +200,7 @@ public class FlakeIdGeneratorProxy
      */
     private int getNodeId() {
         int nodeId = getNodeId(System.nanoTime());
-        assert nodeId > 0 || nodeId == NODE_ID_OUT_OF_RANGE : "getNodeId() returned invalid value";
+        assert nodeId > 0 || nodeId == NODE_ID_OUT_OF_RANGE : "getNodeId() returned invalid value: " + nodeId;
         return nodeId;
     }
 
