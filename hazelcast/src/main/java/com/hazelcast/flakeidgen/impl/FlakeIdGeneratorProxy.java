@@ -199,7 +199,9 @@ public class FlakeIdGeneratorProxy
      * </ul>
      */
     private int getNodeId() {
-        return getNodeId(System.nanoTime());
+        int nodeId = getNodeId(System.nanoTime());
+        assert nodeId > 0 || nodeId == NODE_ID_OUT_OF_RANGE : "getNodeId() returned invalid value";
+        return nodeId;
     }
 
     // package-visible for tests
@@ -212,7 +214,6 @@ public class FlakeIdGeneratorProxy
             int newNodeId = getNodeEngine().getClusterService().getMemberListJoinVersion();
             assert newNodeId >= 0 : "newNodeId=" + newNodeId;
             newNodeId += nodeIdOffset;
-            nextNodeIdUpdate = nanoTime + NODE_ID_UPDATE_INTERVAL_NS;
             if (newNodeId != nodeId) {
                 nodeId = newNodeId;
 
@@ -226,10 +227,18 @@ public class FlakeIdGeneratorProxy
 
                 // we ignore possible double initialization
                 this.nodeId = nodeId;
+                nextNodeIdUpdate = nanoTime + NODE_ID_UPDATE_INTERVAL_NS;
                 if (logger.isFineEnabled()) {
                     logger.fine("Node ID assigned to '" + name + "': " + nodeId);
                 }
             }
+        } else if (nodeId == NODE_ID_NOT_YET_SET) {
+            // There is a race between the IF branch above and the local nodeId assignment just above the branch.
+            // It could be we didn't take the branch yet the local nodeId variable still contains the
+            // NODE_ID_NOT_YET_SET value.
+            // Solution: At this point the nodeId *field* is guaranteed to be different from NODE_ID_NOT_YET_SET
+            // so we can simply dereference it and return it as a result.
+            nodeId = this.nodeId;
         }
 
         return nodeId;
